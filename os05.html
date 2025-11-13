@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <title>ブースターパック sprite</title>
+  <style>
+    .gallery {
+		display: flex;
+		flex-wrap: wrap;
+		column-gap: 10px; /* 水平間距維持 */
+		row-gap: 4px;      /* 垂直間距縮小為 4px（你可再調整） */
+	}
+
+    .image-container {
+      width: calc((100% - 20px) / 3);
+      aspect-ratio: 2/3;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .image-container img {
+      max-height: 100%;
+      max-width: 100%;
+      transition: transform 0.3s;
+      cursor: pointer;
+    }
+
+    /* 橫圖旋轉後調整位置與大小 */
+    .rotate {
+      transform: rotate(90deg);
+      transform-origin: center center;
+      max-height: 100%;
+      max-width: unset; /* 讓旋轉圖不會被寬限制 */
+    }
+
+    .overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background-color: rgba(0,0,0,0.8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      display: none;
+    }
+
+    .overlay img {
+      max-width: 90%;
+      max-height: 90%;
+      border: 5px solid white;
+      box-shadow: 0 0 20px black;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>WSR ブースターパック sprite 補充包 卡表</h1>
+  <div class="gallery" id="gallery"></div>
+
+  <div class="overlay" id="overlay">
+    <img id="overlayImage" src="" alt="預覽圖片">
+  </div>
+
+<script>
+  const gallery = document.getElementById("gallery");
+  const overlay = document.getElementById("overlay");
+  const overlayImage = document.getElementById("overlayImage");
+
+  for (let i = 1; i <= 100; i++) {
+    const container = document.createElement("div");
+    container.className = "image-container";
+
+    const img = document.createElement("img");
+    const num = i.toString().padStart(3, "0");
+    img.src = `https://ws-rose.com/wordpress/wp-content/images/cardlist/os05/r05/os05_r05_${num}.png`;
+    img.alt = `圖片 ${i}`;
+    img.loading = "lazy";
+
+    img.addEventListener("click", () => {
+      overlayImage.src = img.src;
+      overlay.style.display = "flex";
+    });
+
+    img.onload = () => {
+      if (img.naturalWidth > img.naturalHeight) {
+        img.classList.add("rotate");
+      }
+    };
+
+    container.appendChild(img);
+    gallery.appendChild(container);
+  }
+
+  // 當圖片載入完成後自動根據比例調整大小（不變形）
+  overlayImage.onload = () => {
+    const maxW = window.innerWidth * 0.95;
+    const maxH = window.innerHeight * 0.95;
+    const ratio = overlayImage.naturalWidth / overlayImage.naturalHeight;
+
+    let showW = maxW;
+    let showH = showW / ratio;
+    if (showH > maxH) {
+      showH = maxH;
+      showW = showH * ratio;
+    }
+
+    overlayImage.style.width = showW + "px";
+    overlayImage.style.height = showH + "px";
+    overlayImage.style.objectFit = "contain";
+  };
+
+  // 點擊關閉
+  overlay.addEventListener("click", () => {
+    overlay.style.display = "none";
+    overlayImage.src = "";
+  });
+
+  // 視窗大小變更時保持比例重算
+  window.addEventListener("resize", () => {
+    if (overlay.style.display === "flex" && overlayImage.src) {
+      const maxW = window.innerWidth * 0.95;
+      const maxH = window.innerHeight * 0.95;
+      const ratio = overlayImage.naturalWidth / overlayImage.naturalHeight;
+
+      let showW = maxW;
+      let showH = showW / ratio;
+      if (showH > maxH) {
+        showH = maxH;
+        showW = showH * ratio;
+      }
+
+      overlayImage.style.width = showW + "px";
+      overlayImage.style.height = showH + "px";
+    }
+  });
+</script>
+
+
+</body>
+</html>
