@@ -73,29 +73,62 @@
   const overlay = document.getElementById("overlay");
   const overlayImage = document.getElementById("overlayImage");
 
-  for (let i = 1; i <= 100; i++) {
-    const container = document.createElement("div");
-    container.className = "image-container";
+  // 預組、PR
+  const tdCardNums = [1, 5, 16];
+  const prCardNums = [13, 14, 16, 17];
+  
+  // 補充包
+  for (let j = 0; j < 3 ; j++) {
+	var times = 0;
+	switch (j){
+		case 0:
+			times = tdCardNums.length;
+			break;
+		case 1:
+			times = 100;
+			break;
+		case 2:
+			times = prCardNums.length;
+			break;
+	}
+	
+	for (let i = 1; i <= times; i++) {
+		const container = document.createElement("div");
+		container.className = "image-container";
 
-    const img = document.createElement("img");
-    const num = i.toString().padStart(3, "0");
-    img.src = `https://ws-rose.com/wordpress/wp-content/images/cardlist/os02/r02/os02_r02_${num}.png`;
-    img.alt = `圖片 ${i}`;
-    img.loading = "lazy";
+		const img = document.createElement("img");
+		var num;
+		switch (j){
+			case 0:
+				num = tdCardNums[i - 1].toString().padStart(2, "0");
+				img.src = `https://ws-rose.com/wordpress/wp-content/images/cardlist/os02/r02/os02_r02_t${num}.png`;
+				break;
+			case 1:
+				num = i.toString().padStart(3, "0");
+				img.src = `https://ws-rose.com/wordpress/wp-content/images/cardlist/os02/r02/os02_r02_${num}.png`;
+				break;
+			case 2:
+				num = prCardNums[i - 1].toString().padStart(2, "0");
+				img.src = `https://ws-rose.com/wordpress/wp-content/images/cardlist/os02/r02/os02_r02_p${num}.png`;
+				break;
+		}
+		img.alt = `圖片 ${i}`;
+		img.loading = "lazy";
 
-    img.addEventListener("click", () => {
-      overlayImage.src = img.src;
-      overlay.style.display = "flex";
-    });
+		img.addEventListener("click", () => {
+		overlayImage.src = img.src;
+		overlay.style.display = "flex";
+		});
 
-    img.onload = () => {
-      if (img.naturalWidth > img.naturalHeight) {
-        img.classList.add("rotate");
-      }
-    };
+		img.onload = () => {
+			if (img.naturalWidth > img.naturalHeight) {
+				img.classList.add("rotate");
+			}
+		};
 
-    container.appendChild(img);
-    gallery.appendChild(container);
+		container.appendChild(img);
+		gallery.appendChild(container);
+	}
   }
 
   // 當圖片載入完成後自動根據比例調整大小（不變形）
