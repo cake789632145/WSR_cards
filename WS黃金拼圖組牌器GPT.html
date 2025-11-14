@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>卡牌總覽 — kms_w133</title>
+<style>
+:root{--bg:#0f1724;--card:#0b1220;--muted:#9aa4b2;--accent:#60a5fa}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,'Noto Sans TC',sans-serif;background:linear-gradient(180deg,#071028 0%, #071a2a 100%);color:#e6eef8;display:flex}
+header{padding:18px 20px;display:flex;gap:12px;align-items:center;backdrop-filter:blur(6px);position:fixed;width:100%;z-index:10;background:rgba(15,23,36,0.95)}
+h1{font-size:18px;margin:0}
+.controls{margin-left:auto;display:flex;gap:8px;align-items:center}
+.btn{background:transparent;border:1px solid rgba(255,255,255,0.06);padding:6px 10px;border-radius:8px;color:var(--muted);cursor:pointer}
+.btn.active{border-color:var(--accent);color:var(--accent)}
+.search{padding:6px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);background:rgba(255,255,255,0.02);color:inherit}
+main{padding:100px 16px 16px 16px;flex:1;overflow:auto}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px}
+.card{background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(0,0,0,0.12));padding:8px;border-radius:10px;display:flex;flex-direction:column;align-items:center;gap:8px;border:1px solid rgba(255,255,255,0.03)}
+.thumb{width:100%;aspect-ratio:3/4;display:block;object-fit:contain;border-radius:6px;background:linear-gradient(45deg,rgba(255,255,255,0.02),transparent);cursor:pointer}
+.meta{font-size:12px;color:var(--muted);text-align:center}
+.modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(2,6,23,0.7);z-index:60;padding:20px}
+.modal.open{display:flex}
+.modal-inner{max-width:1100px;width:100%;background:var(--card);padding:12px;border-radius:12px;display:flex;flex-direction:column;gap:12px;align-items:center;position:relative}
+.modal-inner img{max-height:70vh;width:auto;max-width:90%;object-fit:contain;border-radius:6px}
+.modal-close{position:absolute;top:8px;right:8px;background:rgba(255,255,255,0.1);border:none;color:white;font-size:20px;width:32px;height:32px;border-radius:50%;cursor:pointer;line-height:28px;text-align:center}
+.modal-close:hover{background:rgba(255,255,255,0.25)}
+.modal-controls{display:flex;gap:8px;align-items:center;color:white;font-size:16px}
+#deck{width:180px;background:var(--card);padding:12px;display:flex;flex-direction:column;gap:8px;position:fixed;right:0;top:70px;bottom:0;overflow-y:auto;border-left:1px solid rgba(255,255,255,0.08)}
+#deck h2{margin:0;font-size:16px;display:flex;justify-content:space-between;align-items:center;color:var(--accent)}
+.deck-card{display:flex;flex-direction:column;align-items:center;margin-bottom:8px}
+.deck-card img{width:60px;height:auto;margin:0;cursor:pointer;border-radius:4px;border:1px solid rgba(255,255,255,0.1)}
+.deck-count{font-size:12px;color:var(--muted);margin-top:2px}
+@media (max-width:900px){#deck{position:relative;width:100%;flex-direction:row;overflow-x:auto;top:0;border-left:none;border-top:1px solid rgba(255,255,255,0.08)}}
+</style>
+</head>
+<body>
+<header>
+<h1>卡牌總覽 — kms_w133</h1>
+<div class="controls">
+<button class="btn active" id="btn-t">T範圍 t01–t20</button>
+<button class="btn active" id="btn-main">主卡 001–100</button>
+<input id="filter" class="search" placeholder="搜尋卡號 (ex: t05 或 12)" />
+<button id="btn-reset" class="btn">重設</button>
+</div>
+</header>
+<main>
+<div>顯示數量：<span id="count">0</span></div>
+<div id="gallery" class="grid"></div>
+</main>
+<!-- 右側我的牌組 -->
+<div id="deck">
+<h2>我的牌組 <span id="deckTotal">總數: 0</span> <button id="clearDeck" class="btn">清空</button></h2>
+<div id="deck-list"></div>
+</div>
+
+<div id="modal" class="modal">
+<div class="modal-inner">
+<button class="modal-close" id="closeBtn">✕</button>
+<img id="modal-img" src="" alt="card" />
+<div class="modal-controls">
+<button id="minusBtn" class="btn">-</button>
+<span id="cardCount">0</span>
+<button id="plusBtn" class="btn">+</button>
+</div>
+</div>
+</div>
+
+<script>
+const gallery=document.getElementById("gallery");
+const modal=document.getElementById("modal");
+const modalImg=document.getElementById("modal-img");
+const closeBtn=document.getElementById("closeBtn");
+const countEl=document.getElementById("count");
+const btnT=document.getElementById("btn-t");
+const btnMain=document.getElementById("btn-main");
+const filterInput=document.getElementById("filter");
+const btnReset=document.getElementById("btn-reset");
+const deckList=document.getElementById("deck-list");
+const clearDeckBtn=document.getElementById("clearDeck");
+const cardCountEl=document.getElementById("cardCount");
+const plusBtn=document.getElementById("plusBtn");
+const minusBtn=document.getElementById("minusBtn");
+const deckTotalEl=document.getElementById("deckTotal");
+
+const allCards=[];
+for(let i=1;i<=20;i++){const num=String(i).padStart(2,"0");allCards.push({id:`t${num}`,url:`https://ws-tcg.com/wordpress/wp-content/images/cardlist/k/kms_w133/kms_w133_t${num}.png`,type:'t'});}
+for(let i=1;i<=100;i++){const num=String(i).padStart(3,"0");allCards.push({id:`${num}`,url:`https://ws-tcg.com/wordpress/wp-content/images/cardlist/k/kms_w133/kms_w133_${num}.png`,type:'main'});}
+
+let showT=true,showMain=true,filtered=allCards.slice(),currentList=[],currentIndex=-1;
+let deck=JSON.parse(localStorage.getItem("myDeck")||"{}");
+
+function render(){
+gallery.innerHTML="";
+currentList=filtered.filter(it=>(showT&&it.type==='t')||(showMain&&it.type==='main'));
+countEl.textContent=currentList.length;
+currentList.forEach((it,i)=>{
+const div=document.createElement("div");div.className="card";
+const img=document.createElement("img");img.src=it.url;img.className="thumb";img.alt=it.id;
+img.addEventListener("click",()=>openModal(i));
+div.appendChild(img);
+const meta=document.createElement("div");meta.className="meta";meta.textContent=it.id;div.appendChild(meta);
+gallery.appendChild(div);
+});
+renderDeck();
+}
+
+function openModal(index){
+currentIndex=index;
+const card=currentList[index];
+modalImg.src=card.url;
+modal.classList.add("open");
+cardCountEl.textContent=deck[card.id]||0;
+}
+
+function closeModal(){modal.classList.remove("open");modalImg.src="";currentIndex=-1;}
+
+function addCard(){if(currentIndex<0)return;const card=currentList[currentIndex];deck[card.id]=(deck[card.id]||0)+1;saveDeck();cardCountEl.textContent=deck[card.id];renderDeck();}
+function removeCard(){if(currentIndex<0)return;const card=currentList[currentIndex];if(deck[card.id]>0){deck[card.id]-=1;if(deck[card.id]<=0) delete deck[card.id];saveDeck();cardCountEl.textContent=deck[card.id]||0;renderDeck();}}
+
+function saveDeck(){localStorage.setItem("myDeck",JSON.stringify(deck));}
+
+function renderDeck(){
+deckList.innerHTML="";
+let total=0;
+for(const id in deck){
+const card=allCards.find(c=>c.id===id);
+if(card){
+total+=deck[id];
+const container=document.createElement("div");container.className="deck-card";
+const img=document.createElement("img");img.src=card.url; img.alt=card.id; img.title="點擊放大";
+img.addEventListener("click",()=>{
+currentIndex=currentList.findIndex(c=>c.id===id);
+openModal(currentIndex);
+});
+const countDiv=document.createElement("div");countDiv.className="deck-count";countDiv.textContent="數量: "+deck[id];
+container.appendChild(img);container.appendChild(countDiv);
+deckList.appendChild(container);
+}}
+deckTotalEl.textContent="總數: "+total;
+}
+
+closeBtn.addEventListener("click",closeModal);
+modal.addEventListener("click",e=>{if(e.target===modal)closeModal();});
+window.addEventListener("keydown",e=>{
+if(modal.classList.contains("open")){
+if(e.key==="Escape")closeModal();
+if(e.key==="ArrowRight"&&currentIndex<currentList.length-1)openModal(currentIndex+1);
+if(e.key==="ArrowLeft"&&currentIndex>0)openModal(currentIndex-1);
+}
+});
+
+btnT.addEventListener("click",()=>{showT=!showT; btnT.classList.toggle("active",showT); render();});
+btnMain.addEventListener("click",()=>{showMain=!showMain; btnMain.classList.toggle("active",showMain); render();});
+filterInput.addEventListener("input",()=>{const q=filterInput.value.trim().toLowerCase();filtered=q?allCards.filter(it=>it.id.toLowerCase().includes(q)):allCards.slice(); render();});
+btnReset.addEventListener("click",()=>{filterInput.value="";showT=true;showMain=true;btnT.classList.add("active");btnMain.classList.add("active");filtered=allCards.slice();render();});
+clearDeckBtn.addEventListener("click",()=>{deck={};saveDeck();renderDeck();cardCountEl.textContent=0;});
+plusBtn.addEventListener("click",addCard);
+minusBtn.addEventListener("click",removeCard);
+
+render();
+</script>
+</body>
+</html>
